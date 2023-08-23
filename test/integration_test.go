@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -46,6 +47,30 @@ func TestIdentify(t *testing.T) {
 
 func connect(c *p2pclient.Client, d *p2pd.Daemon) error {
 	return c.Connect(d.ID(), d.Addrs())
+}
+
+func TestTcpConnect(t *testing.T) {
+	d1, c1, closer1 := createDaemonClientPair(t, libp2pTcpOptions())
+	defer closer1()
+	d2, c2, closer2 := createDaemonClientPair(t)
+	defer closer2()
+	if err := connect(c1, d2); err != nil {
+		t.Fatal(err)
+	}
+	if err := connect(c2, d1); err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("Daemon 1 Peer Addrs:\n")
+	for _, addr := range d1.Addrs() {
+		fmt.Printf("%s\n", addr.String())
+	}
+	fmt.Printf("Daemon 2 Peer Addrs:\n")
+	for _, addr := range d2.Addrs() {
+		fmt.Printf("%s\n", addr.String())
+	}
+	if err := c1.Connect(peer.ID("foobar"), d2.Addrs()); err == nil {
+		t.Fatal("expected connection to invalid peer id to fail")
+	}
 }
 
 func TestConnect(t *testing.T) {

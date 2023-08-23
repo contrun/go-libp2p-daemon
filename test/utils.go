@@ -9,9 +9,12 @@ import (
 	"runtime"
 	"testing"
 
+	libp2p "github.com/libp2p/go-libp2p"
+
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/test"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 
 	"github.com/stretchr/testify/require"
 
@@ -39,10 +42,20 @@ func createTempDir(t *testing.T) (string, string, func()) {
 	return daemonPath, clientPath, closer
 }
 
-func createDaemon(t *testing.T, daemonAddr ma.Multiaddr) (*p2pd.Daemon, func()) {
+func libp2pTcpOptions() libp2p.Option {
+	var tcpOptions = libp2p.ChainOptions(
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.ListenAddrStrings(
+			"/ip4/0.0.0.0/tcp/44444",
+		),
+	)
+	return tcpOptions
+}
+
+func createDaemon(t *testing.T, daemonAddr ma.Multiaddr, opts ...libp2p.Option) (*p2pd.Daemon, func()) {
 	golog.SetAllLoggers(golog.LevelDebug) // Show all libp2p daemon information
 	ctx, cancelCtx := context.WithCancel(context.Background())
-	daemon, err := p2pd.NewDaemon(ctx, daemonAddr, "")
+	daemon, err := p2pd.NewDaemon(ctx, daemonAddr, "", opts...)
 	daemon.EnablePubsub("gossipsub", false, false)
 	if err != nil {
 		t.Fatal(err)
@@ -61,9 +74,9 @@ func createClient(t *testing.T, daemonAddr ma.Multiaddr, clientAddr ma.Multiaddr
 	return client, closer
 }
 
-func createDaemonClientPair(t *testing.T) (*p2pd.Daemon, *p2pclient.Client, func()) {
+func createDaemonClientPair(t *testing.T, opts ...libp2p.Option) (*p2pd.Daemon, *p2pclient.Client, func()) {
 	dmaddr, cmaddr, dirCloser := getEndpointsMaker(t)(t)
-	daemon, closeDaemon := createDaemon(t, dmaddr)
+	daemon, closeDaemon := createDaemon(t, dmaddr, opts...)
 	client, closeClient := createClient(t, daemon.Listener().Multiaddr(), cmaddr)
 
 	closer := func() {
