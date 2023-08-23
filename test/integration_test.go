@@ -23,6 +23,10 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
+var (
+	testprotos = []string{"/test"}
+)
+
 func TestIdentify(t *testing.T) {
 	d, c, closer := createDaemonClientPair(t)
 	defer closer()
@@ -57,7 +61,21 @@ func runDaemon(t *testing.T, opts ...libp2p.Option) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	_, _, closer := createDaemonClientPair(t, opts...)
+	_, c, closer := createDaemonClientPair(t, opts...)
+
+	err := c.NewStreamHandler(testprotos, func(info *p2pclient.StreamInfo, conn io.ReadWriteCloser) {
+		defer conn.Close()
+		buf := make([]byte, 1024)
+		_, err := conn.Read(buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Printf("Got message \"%s\"\n", string(buf))
+		conn.Write([]byte("pong"))
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	go func() {
 		sig := <-sigs
@@ -98,6 +116,42 @@ func TestBobConnectToAlice(t *testing.T) {
 	if err := c1.Connect(aliceID(), []ma.Multiaddr{a}); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestBobTalkToAlice(t *testing.T) {
+	_, c1, closer1 := createDaemonClientPair(t, bobLibp2pOptions())
+	defer closer1()
+	a, err := ma.NewMultiaddr(
+		"/ip4/127.0.0.1/tcp/33300",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// time.Sleep(10 * time.Second)
+	if err := c1.Connect(aliceID(), []ma.Multiaddr{a}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, conn, err := c1.NewStream(aliceID(), testprotos)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, err := conn.Write([]byte("ping"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 4 {
+		t.Fatal("wrote wrong # of bytes")
+	}
+
+	buf := make([]byte, 1024)
+	_, err = conn.Read(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("Got message \"%s\"\n", string(buf))
+
+	conn.Close()
 }
 
 func TestTcpConnect(t *testing.T) {
