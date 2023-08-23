@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
+	"syscall"
 	"testing"
 	"time"
 
@@ -49,6 +52,35 @@ func connect(c *p2pclient.Client, d *p2pd.Daemon) error {
 	return c.Connect(d.ID(), d.Addrs())
 }
 
+func runDaemon(t *testing.T, opts ...libp2p.Option) {
+	done := make(chan bool, 1)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	_, _, closer := createDaemonClientPair(t, opts...)
+
+	go func() {
+		sig := <-sigs
+		fmt.Println()
+		fmt.Println(sig)
+		done <- true
+	}()
+
+	fmt.Println("awaiting signal")
+	<-done
+	fmt.Println("exiting")
+
+	defer closer()
+}
+
+func TestRunAliceDaemon(t *testing.T) {
+	runDaemon(t, aliceLibp2pOptions())
+}
+
+func TestRunBobDaemon(t *testing.T) {
+	runDaemon(t, bobLibp2pOptions())
+}
+
 func TestTcpConnect(t *testing.T) {
 	d1, c1, closer1 := createDaemonClientPair(t, libp2pTcpOptions())
 	defer closer1()
@@ -83,6 +115,14 @@ func TestConnect(t *testing.T) {
 	}
 	if err := connect(c2, d1); err != nil {
 		t.Fatal(err)
+	}
+	fmt.Printf("Daemon 1 Peer Addrs:\n")
+	for _, addr := range d1.Addrs() {
+		fmt.Printf("%s\n", addr.String())
+	}
+	fmt.Printf("Daemon 2 Peer Addrs:\n")
+	for _, addr := range d2.Addrs() {
+		fmt.Printf("%s\n", addr.String())
 	}
 	if err := c1.Connect(peer.ID("foobar"), d2.Addrs()); err == nil {
 		t.Fatal("expected connection to invalid peer id to fail")

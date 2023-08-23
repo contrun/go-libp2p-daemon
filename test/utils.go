@@ -42,6 +42,50 @@ func createTempDir(t *testing.T) (string, string, func()) {
 	return daemonPath, clientPath, closer
 }
 
+func MustGetPrivateKey(bytes []byte) crypto.PrivKey {
+	priv, err := crypto.UnmarshalPrivateKey(bytes)
+	if err != nil {
+		panic(err)
+	}
+	return priv
+}
+
+func alicePrivateKey() crypto.PrivKey {
+	return MustGetPrivateKey(
+		[]byte{
+			8, 1, 18, 64, 235, 179, 123, 51, 242, 112, 212, 230, 176, 237, 43, 159, 32, 175, 201, 230, 65, 168, 139, 26, 221, 224, 72, 7, 141, 230, 41, 164, 132, 189, 175, 230, 140, 114, 216, 179, 105, 97, 150, 20, 222, 58, 148, 113, 142, 12, 77, 117, 95, 188, 136, 189, 162, 85, 107, 192, 134, 15, 199, 188, 218, 79, 234, 132,
+		},
+	)
+}
+
+func aliceLibp2pOptions() libp2p.Option {
+	return libp2p.ChainOptions(
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.ListenAddrStrings(
+			"/ip4/0.0.0.0/tcp/33300",
+		),
+		libp2p.Identity(alicePrivateKey()),
+	)
+}
+
+func bobPrivateKey() crypto.PrivKey {
+	return MustGetPrivateKey(
+		[]byte{
+			8, 1, 18, 64, 224, 17, 143, 148, 63, 203, 175, 20, 252, 48, 182, 136, 175, 29, 237, 21, 110, 161, 61, 44, 2, 209, 33, 48, 103, 223, 226, 208, 210, 148, 75, 172, 109, 121, 212, 24, 213, 67, 41, 7, 105, 54, 111, 123, 43, 168, 192, 163, 218, 108, 85, 227, 221, 194, 34, 237, 79, 39, 87, 58, 110, 218, 21, 140,
+		},
+	)
+}
+
+func bobLibp2pOptions() libp2p.Option {
+	return libp2p.ChainOptions(
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.ListenAddrStrings(
+			"/ip4/0.0.0.0/tcp/33301",
+		),
+		libp2p.Identity(bobPrivateKey()),
+	)
+}
+
 func libp2pTcpOptions() libp2p.Option {
 	var tcpOptions = libp2p.ChainOptions(
 		libp2p.Transport(tcp.NewTCPTransport),
