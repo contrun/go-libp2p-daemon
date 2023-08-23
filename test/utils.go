@@ -50,6 +50,18 @@ func MustGetPrivateKey(bytes []byte) crypto.PrivKey {
 	return priv
 }
 
+func MustGetID(key crypto.PrivKey) peer.ID {
+	id, err := peer.IDFromPrivateKey(alicePrivateKey())
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
+func aliceID() peer.ID {
+	return MustGetID(alicePrivateKey())
+}
+
 func alicePrivateKey() crypto.PrivKey {
 	return MustGetPrivateKey(
 		[]byte{
@@ -66,6 +78,10 @@ func aliceLibp2pOptions() libp2p.Option {
 		),
 		libp2p.Identity(alicePrivateKey()),
 	)
+}
+
+func bobID() peer.ID {
+	return MustGetID(bobPrivateKey())
 }
 
 func bobPrivateKey() crypto.PrivKey {

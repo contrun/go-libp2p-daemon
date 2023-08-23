@@ -81,6 +81,25 @@ func TestRunBobDaemon(t *testing.T) {
 	runDaemon(t, bobLibp2pOptions())
 }
 
+// Start Alice's daemon first,
+// go test -v -timeout 0 -run '^TestRunAliceDaemon$' ./test/
+// and then run
+// go test -v -count=1 -run '^TestBobConnectToAlice$' ./test/
+func TestBobConnectToAlice(t *testing.T) {
+	_, c1, closer1 := createDaemonClientPair(t, bobLibp2pOptions())
+	defer closer1()
+	a, err := ma.NewMultiaddr(
+		"/ip4/127.0.0.1/tcp/33300",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// time.Sleep(10 * time.Second)
+	if err := c1.Connect(aliceID(), []ma.Multiaddr{a}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestTcpConnect(t *testing.T) {
 	d1, c1, closer1 := createDaemonClientPair(t, libp2pTcpOptions())
 	defer closer1()
