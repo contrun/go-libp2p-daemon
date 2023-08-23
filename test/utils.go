@@ -15,6 +15,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	golog "github.com/ipfs/go-log/v2"
+
 	cid "github.com/ipfs/go-cid"
 	p2pd "github.com/libp2p/go-libp2p-daemon"
 	"github.com/libp2p/go-libp2p-daemon/p2pclient"
@@ -38,6 +40,7 @@ func createTempDir(t *testing.T) (string, string, func()) {
 }
 
 func createDaemon(t *testing.T, daemonAddr ma.Multiaddr) (*p2pd.Daemon, func()) {
+	golog.SetAllLoggers(golog.LevelDebug) // Show all libp2p daemon information
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	daemon, err := p2pd.NewDaemon(ctx, daemonAddr, "")
 	daemon.EnablePubsub("gossipsub", false, false)
