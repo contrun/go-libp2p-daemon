@@ -102,6 +102,28 @@ func bobLibp2pOptions() libp2p.Option {
 	)
 }
 
+func charlieID() peer.ID {
+	return MustGetID(charliePrivateKey())
+}
+
+func charliePrivateKey() crypto.PrivKey {
+	return MustGetPrivateKey(
+		[]byte{
+			8, 1, 18, 64, 235, 179, 123, 51, 242, 112, 212, 230, 176, 237, 43, 159, 32, 175, 201, 230, 65, 168, 139, 26, 221, 224, 72, 7, 141, 230, 41, 164, 132, 189, 175, 230, 140, 114, 216, 179, 105, 97, 150, 20, 222, 58, 148, 113, 142, 12, 77, 117, 95, 188, 136, 189, 162, 85, 107, 192, 134, 15, 199, 188, 18, 29, 24, 33,
+		},
+	)
+}
+
+func charlieLibp2pOptions() libp2p.Option {
+	return libp2p.ChainOptions(
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.ListenAddrStrings(
+			"/ip4/0.0.0.0/tcp/18444",
+		),
+		libp2p.Identity(charliePrivateKey()),
+	)
+}
+
 func libp2pTcpOptions() libp2p.Option {
 	var tcpOptions = libp2p.ChainOptions(
 		libp2p.Transport(tcp.NewTCPTransport),

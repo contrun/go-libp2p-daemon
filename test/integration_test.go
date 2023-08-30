@@ -99,6 +99,10 @@ func TestRunBobDaemon(t *testing.T) {
 	runDaemon(t, bobLibp2pOptions())
 }
 
+func TestRunCharlieDaemon(t *testing.T) {
+	runDaemon(t, charlieLibp2pOptions())
+}
+
 // Start Alice's daemon first,
 // go test -v -timeout 0 -run '^TestRunAliceDaemon$' ./test/
 // and then run
